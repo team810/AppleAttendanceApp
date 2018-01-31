@@ -13,10 +13,49 @@ import CoreData
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    public var team_members: [Student] = [Student]()
+    public var team: String?
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        /*print(NSHomeDirectory())
+        let directories = NSSearchPathForDirectoriesInDomains(.documentDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
+        if let docs = directories.first{
+            print(docs)
+        }*/
+        
+        var s: Student = Student()
+        s.wipeClean()
+        
+        var students = [Student]()
+        
+        students = s.load()
+        if  students.count == 0 {
+            
+            s = Student()
+            s.FirstName = "bruce"
+            s.LastName = "wayne"
+            s.StudentId = "1"
+            students.append(s)
+            
+            s = Student()
+            s.FirstName = "lois"
+            s.LastName = "lane"
+            s.StudentId = "2"
+            students.append(s)
+            
+            s = Student()
+            s.FirstName = "ralph"
+            s.LastName = "cramden"
+            s.StudentId = "3"
+            students.append(s)
+            s.save(StudentList: students)
+        }
+
+        let userDefaults = UserDefaults.standard
+        userDefaults.set("Robotics", forKey: Constants().TeamName)
+        
         return true
     }
 
@@ -28,6 +67,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+        Student().save(StudentList: UserDefaults.standard.array(forKey: Constants().StudentList) as! [Student])
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
