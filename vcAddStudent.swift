@@ -9,8 +9,8 @@
 import UIKit
 import Firebase
 
-class vcAddStudent: UIViewController {
-    var newStudent: Student = Student()
+class vcAddStudent: UIViewController, UITextFieldDelegate {
+    //var newStudent: Student = Student()
     var delegate: addSceneData? = nil
 
     @IBOutlet var txtStudentId: UITextField!
@@ -21,7 +21,8 @@ class vcAddStudent: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        txtStudentId.delegate = self
+        txtStudentId.keyboardType = .numberPad
         // Do any additional setup after loading the view.
     }
 
@@ -34,25 +35,39 @@ class vcAddStudent: UIViewController {
         dismiss(animated: true, completion: nil)
     }
     @IBAction func save(_ sender: UIButton) {
-        newStudent.FirstName = txtFirstName.text
-        newStudent.LastName = txtLastName.text
-        newStudent.StudentId = txtStudentId.text
+        //newStudent.FirstName = txtFirstName.text
+        //newStudent.LastName = txtLastName.text
+        //newStudent.StudentId = txtStudentId.text
         
-        let a: Int? = Int(txtStudentId.text!)
-        
-        ref.child("Users").child("userNumber").observeSingleEvent(of: .value, with: {snapshot in
-            var usrNmbr: Int = snapshot.value as! Int
-            usrNmbr = usrNmbr + 1
-            self.ref.child("Users").child("userNumber").setValue(usrNmbr)
+        ref.observeSingleEvent(of: .value, with: {snapshot in
+            /*if snapshot.hasChild("userNumber"){
+                self.ref.child("userNumber").observeSingleEvent(of: .value, with: {snapshot in
+                    var usrNmbrString: String = snapshot.value as! String
+                    var usrNmbr = Int(usrNmbrString)!
+                    usrNmbr = usrNmbr + 1
+                    
+                    self.ref.child("userNumber").setValue("\(usrNmbr)")
+                    
+                    
+                    
+                    self.ref.child("Users").child("\(usrNmbr)").child("First").setValue(self.txtFirstName.text)
+                    self.ref.child("Users").child("\(usrNmbr)").child("Last").setValue(self.txtLastName.text)
+                    self.ref.child("Users").child("\(usrNmbr)").child("ID").setValue(self.txtStudentId.text)
+                })
+            }
+            else{
+                self.ref.child("userNumber").setValue("0")
+                let usrNmbr:Int = 1
+                self.ref.child("userNumber").setValue("\(usrNmbr)")
+                self.ref.child("Users").child("\(usrNmbr)").child("First").setValue(self.txtFirstName.text)
+                self.ref.child("Users").child("\(usrNmbr)").child("Last").setValue(self.txtLastName.text)
+                self.ref.child("Users").child("\(usrNmbr)").child("ID").setValue(self.txtStudentId.text)
+            }*/
+            self.ref.child("Users").childByAutoId().setValue(["First":self.txtFirstName.text! as NSString, "Last":self.txtLastName.text! as! NSString , "ID":self.txtStudentId.text! as! NSString])
             
-            self.ref.child("Users").child("\(usrNmbr)").child("first").setValue(self.txtFirstName.text)
-            self.ref.child("Users").child("\(usrNmbr)").child("last").setValue(self.txtLastName.text)
-            self.ref.child("Users").child("\(usrNmbr)").child("id").setValue(a)
         })
         
-        
-        
-        delegate?.getNewStudentData(newStudent: newStudent)
+        //delegate?.getNewStudentData(newStudent: newStudent)
         dismiss(animated: true, completion: nil)
     }
 
