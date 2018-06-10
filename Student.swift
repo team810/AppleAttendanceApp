@@ -9,20 +9,37 @@
 import Foundation
 import Firebase
 
-class Student:NSObject, NSCoding{
+class Student:NSObject{//, NSCoding{
+    //required init?(coder aDecoder: NSCoder) {
+    //}
+    
     
     let ref = Database.database().reference()
+    let ref1 : DatabaseReference!
     var vc: ViewController?
-    override init() {
-        
+    var sc: StudentCell?
+    var isPresent:Bool = false
+    
+    @objc let date = Date()
+    var currentDate = ""
+    let formatter = DateFormatter()
+    
+    init(snapshot:DataSnapshot) {
+        ref1 = snapshot.ref
+        if let value = snapshot.value as? [String : Any]{
+            FirstName = value["First"] as? String
+            LastName = value["Last"] as? String ?? " "
+            StudentId = value["ID"] as? String ?? " "
+        }
     }
+    
     func encode(with aCoder: NSCoder) {
         aCoder.encode(FirstName, forKey: Constants().FirstName)
         aCoder.encode(LastName, forKey: Constants().LastName)
         aCoder.encode(StudentId, forKey: Constants().StudentId)
     }
     
-    required convenience init?(coder aDecoder: NSCoder) {
+    /*required convenience init?(coder aDecoder: NSCoder) {
         let firstName = aDecoder.decodeObject(forKey: Constants().FirstName) as! String
         let lastName = aDecoder.decodeObject(forKey: Constants().LastName) as! String
         let studentId = aDecoder.decodeObject(forKey: Constants().StudentId) as! String
@@ -32,10 +49,11 @@ class Student:NSObject, NSCoding{
         FirstName = _firstName
         LastName = _lastName
         StudentId = _StudentId
-    }
+    }*/
     var FirstName: String?
     var LastName: String?
     var StudentId: String?
+    var signedIn = false
     func FullName() ->String {
         var fname = FirstName
         if FirstName == nil {
@@ -59,71 +77,57 @@ class Student:NSObject, NSCoding{
        
         let userDefaults = UserDefaults.standard//save to storage device
         userDefaults.set(studentData, forKey: Constants().StudentList)
-        
-        var i = 1
     }
-    func load() -> [Student] {
-        /*let userDefaults = UserDefaults.standard
-        if let decoded = userDefaults.object(forKey: Constants().StudentList) as? NSData{
-            return NSKeyedUnarchiver.unarchiveObject(with: decoded as Data) as! [Student]
-        }*/
-        var students: [Student] = [Student]()
+    /*func load(){
+        
+        var count: Int = Int()
         self.ref.child("Users").child("userNumber").observeSingleEvent(of: .value, with: {
             snapshot in
             
             let item = snapshot.value as? Int
-            var count: Int = item!
+            count = item!
             var s: Student = Student()
             var i : Int = 1
             let group = DispatchGroup()
-
+    
             for _ in 1...count{
                 
                 group.enter()
 
-                self.ref.child("Users").child("\(i)").child("first").observeSingleEvent(of: .value, with: {snapshot in
+                self.ref.child("Users").child("\(i)").child("First").observeSingleEvent(of: .value, with: {snapshot in
                     s = Student()
                     let name = snapshot.value as? String
                     let test: String = name!
                     s.FirstName = test
                     print(test)
-                    
                 })
-                self.ref.child("Users").child("\(i)").child("last").observeSingleEvent(of: .value, with: {snapshot in
+                self.ref.child("Users").child("\(i)").child("Last").observeSingleEvent(of: .value, with: {snapshot in
                     let last = snapshot.value as? String
-                    let test: String = last!
+                    //let test: String = last!
                     s.LastName = last
-                    //print("\(i) \(test)")
                 })
-                self.ref.child("Users").child("\(i)").child("id").observeSingleEvent(of: .value, with: {snapshot in
+                self.ref.child("Users").child("\(i)").child("ID").observeSingleEvent(of: .value, with: {snapshot in
                     let id = snapshot.value as? Int
                     let idString : String = "\(id!)"
                     s.StudentId = idString
                     self.vc?.students.append(s)
                     group.leave()
-                    //print(s.StudentId)
-                    //print("\(i) \(id)")
                 })
                 i = i + 1
-                // students.append(s)
-                //print(s.FirstName)
-                //s.save(StudentList: students)
-
-                
                 
             }
             group.notify(queue: .main) {
-                
+                self.vc?.sortByFirst()
+                self.vc?.filteredStudents = (self.vc?.students)!
                 self.vc?.tblStudentList.reloadData()
                 print("All callbacks are completed")
+                //self.update()
             }
             let userDefaults = UserDefaults.standard
             userDefaults.set("Robotics", forKey: Constants().TeamName)
-            
         })
-        
-        return students //[Student]()
-    }
+    }*/
+    
     func wipeClean() {
         let StudentList: [Student] = [Student]()
         let studentData = NSKeyedArchiver.archivedData(withRootObject: StudentList)
@@ -131,6 +135,7 @@ class Student:NSObject, NSCoding{
         let userDefaults = UserDefaults.standard
         userDefaults.set(studentData, forKey: Constants().StudentList)
     }
+    
 }
 struct Constants {
     let StudentList = "StudentList"

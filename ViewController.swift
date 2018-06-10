@@ -12,122 +12,180 @@ import Firebase
 protocol addSceneData {
     func getNewStudentData(newStudent: Student)
 }
-class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, addSceneData
+class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchResultsUpdating, addSceneData
 {
     var delTeamInfo: AppDelegate?
     
-    @IBOutlet  var lblName: UILabel!
-    @IBOutlet var txtText1: UITextField!
+    //@IBOutlet  var lblName: UILabel!
     @IBOutlet var tblStudentList: UITableView!
     
     public var students: [Student] = [Student]()
     var cellIdentifier = "cellStudent"
-    var s = Student()
+    //var s = Student()
+    var sc = StudentCell()
     let ref = Database.database().reference()
+    var currentUserNumber = Int()
+    var filteredStudents = [Student]()
+    
+    //var student: Student? { didSet { self.updateUI() }}
+    
+    var switchReference: DatabaseReference?
+    var switchHandle: DatabaseHandle?
+    
+    let searchController = UISearchController(searchResultsController: nil)
+    
+    @objc let date = Date()
+    var currentDate = ""
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        s.vc = self
-        students = s.load()
-        //tblStudentList.reloadData()
-        /*self.ref.child("Users").child("userNumber").observeSingleEvent(of: .value, with: {
-            snapshot in
-            
-            let item = snapshot.value as? Int
-            var count: Int = item!
-            var s: Student = Student()
-            var i : Int = 1
-            s = Student()
-            self.students = s.load()
-            for _ in 1...count{
-                self.ref.child("Users").child("\(i)").child("first").observeSingleEvent(of: .value, with: {snapshot in
-                    let name = snapshot.value as? String
-                    let test: String = name!
-                    s.FirstName = test
-                    print(test)
-                })
-                self.ref.child("Users").child("\(i)").child("last").observeSingleEvent(of: .value, with: {snapshot in
-                    let last = snapshot.value as? String
-                    let test: String = last!
-                    s.LastName = last
-                    //print("\(i) \(test)")
-                })
-                self.ref.child("Users").child("\(i)").child("id").observeSingleEvent(of: .value, with: {snapshot in
-                    let id = snapshot.value as? Int
-                    let idString : String = "\(id!)"
-                    s.StudentId = idString
-                    //print(s.StudentId)
-                    //print("\(i) \(id)")
-                })
-                i = i + 1
-                self.students.append(s)
-                //print(s.FirstName)
-                s.save(StudentList: self.students)
-                
-                self.tblStudentList.reloadData()
+        //s.vc = self
+        //s.load()
+        
+        filteredStudents = students
+        
+        searchController.searchResultsUpdater = self
+        searchController.dimsBackgroundDuringPresentation = false
+        definesPresentationContext = true
+        tblStudentList.tableHeaderView = searchController.searchBar
+        
+        self.tblStudentList.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMddYYYY"
+        
+        currentDate = formatter.string(from: date)
+        print(currentDate)
+        
+        ref.child("Users").observe(.value) { (snapshot) in
+            print(snapshot)
+            self.filteredStudents.removeAll()
+            self.students.removeAll()
+            for child in snapshot.children{
+                let userSnap = child as! DataSnapshot
+                let userSnapData = userSnap.value
+                let userDict = userSnapData as! [String:Any]
+                //if userDict["First"] as? String != "" || userDict["First"] as? String != nil{
+                  //  if userDict["Last"] as! String != "" || userDict["Last"] as! String != nil{
+                    //    if userDict["ID"] as! String != "" || userDict["ID"] as! String != nil{
+                            let user = Student(snapshot: userSnap)
+                            if(user.FirstName != "" && user.LastName != "" && user.StudentId != ""){
+                                self.filteredStudents.append(user)
+                                self.students = self.filteredStudents
+                                self.tblStudentList.reloadData()
+                            }
+                      //  }
+                    //}
+                //}
                 
             }
-            let userDefaults = UserDefaults.standard
-            userDefaults.set("Robotics", forKey: Constants().TeamName)
-
+            self.sortByFirst()
+        }
+        
+        //ref.child("attendance").child(Global.shared.currentDate).observe(.childChanged, with: snap)
+        /*switchReference = ref.child("Users")
+        switchReference?.observe(.childAdded, with: { [weak self] (snapshot: DataSnapshot) in
+            let newUser = snapshot.value
+            //print(newUser as Any)
+            var s: Student = Student()
+            s = Student()
+            
+            if let firebaseDic = snapshot.value as? [String: AnyObject] // unwrap it since its an optional
+            {
+                s.FirstName = (firebaseDic["First"] as! String)
+                print(s.FirstName!)
+                s.LastName = firebaseDic["Last"] as? String
+                s.StudentId = firebaseDic["ID"] as? String
+                self?.getNewStudentData(newStudent: s)
+            }
+            else
+            {
+                print("Error retrieving FrB data") // snapshot value is nil
+            }
         })*/
+        
         // Do any additional setup after loading the view, typically from a nib.
         self.tblStudentList.register(UITableViewCell.self,  forCellReuseIdentifier: "cell")
     }
-    @IBAction func sayHi(_ sender: Any) {
-        students = s.load()
-        tblStudentList.reloadData()
-        
-        let name = txtText1.text
-        let helloMsg = "hello \(name!)"
-        let alertController = UIAlertController(title: "My App", message: helloMsg, preferredStyle: UIAlertControllerStyle.alert)
-        alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.default, handler: nil))
-        self.present(alertController, animated: true, completion: nil)
-    }
     
-    @IBAction func btnNextScreen(_ sender: Any) {
-        performSegue(withIdentifier: "gotoNextScreen", sender: self)
-    }
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if let dest = segue.destination as? ViewController2 {
-            dest.helloWorld = txtText1.text
-        }
+    /*override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if let dest = segue.destination as? vcAddStudent {
             dest.delegate = self
             // this doesn't need to be here for add
             // something like it will need to be here for edit
             dest.newStudent = Student()
         }
-    }
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
+    }*/
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.students.count
+        return self.filteredStudents.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell:StudentCell = self.tblStudentList.dequeueReusableCell(withIdentifier: cellIdentifier, for: indexPath) as! StudentCell
         
-        let student = students[indexPath.row]
+        let student = filteredStudents[indexPath.row]
+        cell.student = student
+        if student.isPresent == true{
+            cell.lblStudentAttending.isOn = true
+        } else{
+            cell.lblStudentAttending.isOn = false
+        }
         
-        cell.lblStudentName.text = student.FullName()
-        cell.lblStudentId.text = student.StudentId
-        return cell //UITableViewCell()
-    }
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
+        return cell
     }
     
-    @IBAction func saveStudentList(_ sender: Any) {
-        Student().save(StudentList: students)
+    @IBAction func sort(_ sender: Any) {
+        let sortedUsers = students.sorted { $0.LastName!.lowercased() < $1.LastName!.lowercased() }
+        students = sortedUsers
+        filteredStudents = students
+        tblStudentList.reloadData()
     }
+    
+    func sortByFirst() {
+        let sortedUsers = students.sorted { $0.FirstName!.lowercased() < $1.FirstName!.lowercased() }
+        students = sortedUsers
+        filteredStudents = students
+        tblStudentList.reloadData()
+    }
+    
+    @IBAction func sortByFirstPressed(_ sender: Any) {
+        let sortedUsers = students.sorted { $0.FirstName!.lowercased() < $1.FirstName!.lowercased() }
+        students = sortedUsers
+        filteredStudents = students
+        tblStudentList.reloadData()
+    }
+    
+    @IBAction func `switch`(_ sender: UISwitch) {
+        if sender.isOn == true{
+            if let cell = sender.superview?.superview as? StudentCell {
+                let indexPath = tblStudentList.indexPath(for: cell)
+                //let index = tblStudentList.cellForRow(at: indexPath!)
+                cell.lblStudentAttending.isOn = false
+                print(indexPath!)
+            }
+        } else{
+            if let cell = sender.superview?.superview as? StudentCell{
+                cell.lblStudentAttending.isOn = false
+            }
+        }
+    }
+    
     func getNewStudentData(newStudent: Student) {
         students.append(newStudent)
+        filteredStudents = students
         self.tblStudentList.reloadData()
     }
+    func updateSearchResults(for searchController: UISearchController) {
+        // If we haven't typed anything into the search bar then do not filter the results
+        if searchController.searchBar.text! == "" {
+            filteredStudents = students
+        } else {
+            // Filter the results
+            filteredStudents = students.filter { $0.FullName().lowercased().contains(searchController.searchBar.text!.lowercased()) }
+        }
+        
+        self.tblStudentList.reloadData()
+    }
+    
 }
-

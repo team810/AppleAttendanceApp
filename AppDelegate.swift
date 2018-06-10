@@ -29,7 +29,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             print(docs)
         }*/
         
-        var s: Student = Student()
+        /*var s: Student = Student()
         s.wipeClean()
         
         var students = [Student]()
@@ -62,6 +62,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             
             s.save(StudentList: students)
         }
+ */
         let userDefaults = UserDefaults.standard
         userDefaults.set("Robotics", forKey: Constants().TeamName)
         
@@ -77,7 +78,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-        Student().save(StudentList: UserDefaults.standard.array(forKey: Constants().StudentList) as! [Student])
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
